@@ -10,7 +10,10 @@ RUN apt-get update && apt-get install -y python3 python3-pip
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
 COPY requirements.txt .
-RUN pip install --upgrade pip && pip install -r requirements.txt
+# Install CUDA-enabled PyTorch first
+RUN pip install --upgrade pip \
+    && pip install torch --extra-index-url https://download.pytorch.org/whl/cu118 \
+    && pip install -r requirements.txt
 
 COPY api.py .
 
