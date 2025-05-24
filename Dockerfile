@@ -22,8 +22,13 @@ RUN pip install --upgrade pip && \
 #    Copy only the files that affect dependency resolution so this layer stays
 #    cached when we edit source files.
 # ------------------------------------------------------------
-COPY requirements.txt pyproject.toml ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Install project dependencies before copying full source for better caching
+COPY pyproject.toml requirements.txt ./
+# 3a. Resolve and download dependencies declared inside pyproject.toml (editable
+#     install without source files yet). This step only needs the metadata, so
+#     it remains cached until dependencies change.
+RUN pip install --no-cache-dir -e . && \
+    pip install --no-cache-dir -r requirements.txt
 
 # ------------------------------------------------------------
 # 4. Application source code
@@ -31,7 +36,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 #    code will rebuild only the following small layers, keeping the heavy
 #    dependency layers cached.
 # ------------------------------------------------------------
+# 4. Copy the actual application source code; only this layer is rebuilt on
+#    code changes.
 COPY . /app
+# 4a. Refresh editable install so the egg-link now points to the populated
+#     directory, skipping dependency resolution.
 RUN pip install --no-deps -e .
 
 # ------------------------------------------------------------

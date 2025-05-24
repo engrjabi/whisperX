@@ -8,20 +8,6 @@ from whisperx.SubtitlesProcessor import SubtitlesProcessor, format_timestamp
 
 app = FastAPI()
 
-def segments_to_srt(segments):
-    def format_timestamp(seconds):
-        hours = int(seconds // 3600)
-        minutes = int((seconds % 3600) // 60)
-        seconds = seconds % 60
-        return f"{hours:02}:{minutes:02}:{seconds:06.3f}".replace('.', ',')
-    lines = []
-    for i, seg in enumerate(segments, 1):
-        start = format_timestamp(seg['start'])
-        end = format_timestamp(seg['end'])
-        text = seg['text'].strip()
-        lines.append(f"{i}\n{start} --> {end}\n{text}\n")
-    return "\n".join(lines)
-
 @app.post('/transcribe')
 async def transcribe_audio(
     file: UploadFile = File(...),
