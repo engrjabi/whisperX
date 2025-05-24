@@ -15,6 +15,10 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY api.py .
+COPY download_models.py .
+
+# Download the smallest WhisperX model and align model at build time
+RUN python download_models.py
 
 EXPOSE 8000
 
