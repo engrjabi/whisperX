@@ -284,7 +284,21 @@ class SubtitlesWriter(ResultWriter):
 
         if "words" in result["segments"][0]:
             for subtitle, _ in iterate_subtitles():
-                sstart, ssend, speaker = _[0]
+                # Correctly derive start/end time for the subtitle.
+                # Previously we used only the first tuple in `times`, which
+                # caused identical timestamps when a single Whisper segment
+                # was split into multiple cues.  We now use either word-level
+                # times (if available) or the first and last segment tuple.
+
+                if "start" in subtitle[0] and "end" in subtitle[-1]:
+                    sstart = subtitle[0]["start"]
+                    ssend = subtitle[-1]["end"]
+                    speaker = _[0][2]
+                else:
+                    sstart = _[0][0]
+                    ssend = _[-1][1]
+                    speaker = _[0][2]
+
                 subtitle_start = self.format_timestamp(sstart)
                 subtitle_end = self.format_timestamp(ssend)
                 if result["language"] in LANGUAGES_WITHOUT_SPACES:
