@@ -1,19 +1,18 @@
-FROM nvidia/cuda:11.8.0-cudnn8-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.1-cudnn8-runtime-ubuntu22.04
 
 WORKDIR /app
 
-# System dependencies for ffmpeg
-RUN apt-get update && apt-get install -y ffmpeg git
-
-# Python
-RUN apt-get update && apt-get install -y python3 python3-pip
+# System dependencies for ffmpeg and python
+RUN apt-get update && apt-get install -y ffmpeg git python3 python3-pip
 RUN ln -s /usr/bin/python3 /usr/bin/python
 
-COPY requirements.txt .
-# Install CUDA-enabled PyTorch first
+# Install torch first to leverage Docker layer caching
 RUN pip install --upgrade pip \
-    && pip install torch --extra-index-url https://download.pytorch.org/whl/cu118 \
-    && pip install -r requirements.txt
+    && pip install torch --index-url https://download.pytorch.org/whl/cu121
+
+# Copy and install the rest of requirements (frequently updated dependencies)
+COPY requirements.txt .
+RUN pip install -r requirements.txt
 
 COPY api.py .
 
