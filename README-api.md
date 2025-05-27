@@ -6,6 +6,7 @@ A simple, production-ready HTTP API for [whisperX](https://github.com/m-bain/whi
 
 - FastAPI REST API
 - Transcribes and aligns audio
+- Pass custom initial prompt/context for better results (`initial_prompt` parameter)
 - **No HuggingFace or diarization** (simpler, no extra dependencies)
 - GPU-accelerated (CUDA)
 
@@ -29,12 +30,34 @@ Requires [NVIDIA Docker](https://docs.nvidia.com/datacenter/cloud-native/contain
 
 ### 3. Usage Example
 
+#### Minimal Example
 ```bash
 curl -X POST "http://localhost:8000/transcribe" \
-     -F "file=@your_audio.mp3"
+     -F "file=@your_audio.mp3" \
+     -F "initial_prompt=This is a sample meeting about AI research."
 ```
+You can provide a custom context or prompt for the first window of audio using `initial_prompt`:
+- (e.g. vocabulary, topic, or important context)
 
-**Returns:** JSON with aligned segments.
+**Note:** The prompt (combined with the model's output) is subject to the Whisper model context window, which is typically limited to 448 tokens for most models. If your prompt is too long, it will be automatically truncated.
+
+#### Full/Verbose Example
+```bash
+curl -X POST "http://localhost:8000/transcribe" \
+  -H "accept: text/plain" \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/home/Documents/mb1ij9x3rn5qnbncb_output_v2.mp3" \
+  -F "model_name=large-v3" \
+  -F "language_code=tl" \
+  -F "output_format=srt" \
+  -F "batch_size=5" \
+  -F "compute_type=float16" \
+  -F "return_char_alignments=true" \
+  -F "diarize=false" \
+  -F "max_line_width=50" \
+  -F "max_line_count=2" \
+  -F "initial_prompt=This is a sample meeting about AI research."
+```
 
 ---
 

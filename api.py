@@ -20,6 +20,7 @@ async def transcribe_audio(
     diarize: bool = Form(False),
     max_line_width: Optional[int] = Form(None),
     max_line_count: Optional[int] = Form(None),
+    initial_prompt: Optional[str] = Form(None),
 ):
     # Save to temp file
     temp_path = f"/tmp/{file.filename}"
@@ -31,11 +32,16 @@ async def transcribe_audio(
         compute_type = "float16" if device == "cuda" else "float32"
 
     # 1. Transcribe (pass through user-specified language to skip automatic language detection)
+    asr_options = {}
+    if initial_prompt is not None:
+        asr_options["initial_prompt"] = initial_prompt
+
     model = whisperx.load_model(
         model_name,
         device,
         compute_type=compute_type,
         language=language_code,
+        asr_options=asr_options if asr_options else None,
     )
     audio = whisperx.load_audio(temp_path)
     result = model.transcribe(audio, batch_size=batch_size)
