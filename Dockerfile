@@ -19,34 +19,26 @@ RUN pip install --upgrade pip && \
 
 # ------------------------------------------------------------
 # 3. Third-party Python packages (excluding our local code)
-#    Copy only the files that affect dependency resolution so this layer stays
-#    cached when we edit source files.
+#    Install project dependencies before copying full source for better caching
 # ------------------------------------------------------------
-# Install project dependencies before copying full source for better caching
 COPY pyproject.toml requirements.txt ./
-# 3a. Resolve and download dependencies declared inside pyproject.toml (editable
-#     install without source files yet). This step only needs the metadata, so
-#     it remains cached until dependencies change.
 RUN pip install --no-cache-dir -e . && \
     pip install --no-cache-dir -r requirements.txt
 
 # ------------------------------------------------------------
-# 4. Application source code
-#    Copy the rest of the repo and install it in editable mode. Changes to the
-#    code will rebuild only the following small layers, keeping the heavy
-#    dependency layers cached.
+# 4. Model download step
+#    Copy only files required for model download first so we maximize caching
 # ------------------------------------------------------------
-# 4. Copy the actual application source code; only this layer is rebuilt on
-#    code changes.
-COPY . /app
-# 4a. Refresh editable install so the egg-link now points to the populated
-#     directory, skipping dependency resolution.
-RUN pip install --no-deps -e .
+COPY download_models.py /app/download_models.py
+COPY whisperx /app/whisperx
+RUN python download_models.py
 
 # ------------------------------------------------------------
-# 5. Model files (kept in the image so first run is fast)
+# 5. Application code and documentation
+#    These changes do *not* bust model download cache
 # ------------------------------------------------------------
-RUN python download_models.py
+COPY . /app
+RUN pip install --no-deps -e .
 
 # ------------------------------------------------------------
 # 6. Expose & run
