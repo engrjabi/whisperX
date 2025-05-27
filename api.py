@@ -11,7 +11,7 @@ app = FastAPI()
 @app.post('/transcribe')
 async def transcribe_audio(
     file: UploadFile = File(...),
-    model_name: str = Form("tiny"),
+    model_name: str = Form("large-v3"),
     language_code: str = Form("en"),
     output_format: str = Form("segments"),  # "segments" (default), "full", or "srt"
     batch_size: int = Form(16),
@@ -36,13 +36,22 @@ async def transcribe_audio(
     if initial_prompt is not None:
         asr_options["initial_prompt"] = initial_prompt
 
-    model = whisperx.load_model(
-        model_name,
-        device,
+    model_args = dict(
+        whisper_arch=model_name,
+        device=device,
         compute_type=compute_type,
         language=language_code,
         asr_options=asr_options if asr_options else None,
     )
+
+    # Set VAD as minimally sensitive (effectively preserves long uninterrupted segments)
+    # vad_options = {
+    #     "min_duration_off": 20.0,
+    #     "min_duration_on": 0.0,
+    # }
+    # model_args['vad_options'] = vad_options
+
+    model = whisperx.load_model(**model_args)
     audio = whisperx.load_audio(temp_path)
     result = model.transcribe(audio, batch_size=batch_size)
     del model
@@ -79,5 +88,3 @@ async def transcribe_audio(
         return result_aligned
     else:
         return {"segments": result_aligned["segments"]}
-
-
